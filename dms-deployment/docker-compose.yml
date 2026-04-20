@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  documents:
+    image: dms-documents
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOST: redis
+      COMMENTS_SERVICE_URL: http://comments:8083
+    depends_on:
+      - redis
+      - comments
+
+  comments:
+    image: dms-comments
+    ports:
+      - "8083:8083"
+    environment:
+      CASSANDRA_HOST: cassandra
+    depends_on:
+      - cassandra
+
+  gateway:
+    image: dms-gateway
+    ports:
+      - "8080:8080"
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: ensia1234
+    volumes:
+      - minio_data:/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+  cassandra:
+    image: cassandra:4.1
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: dms-cluster
+      CASSANDRA_DC: datacenter1
+      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 512M
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      retries: 10
+
+volumes:
+  minio_data:
