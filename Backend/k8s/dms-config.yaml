@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dms-config
+data:
+  AWS_S3_ENABLED: "true"
+  AWS_S3_ENDPOINT: "http://minio:9000"
+  AWS_S3_PRESIGN_ENDPOINT: "http://localhost:32000"
+  AWS_S3_BUCKET: "documents"
+  AWS_S3_REGION: "us-east-1"
+  AWS_S3_PRESIGN_EXPIRATION_MINUTES: "10"
+  REDIS_HOST: "redis"
+  COMMENTS_SERVICE_URL: "http://comments:8083"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_CONSUMER_GROUP: "translator-service"
+  KAFKA_INPUT_TOPIC: "dms.documents.uploaded"
+  KAFKA_OUTPUT_TOPIC: "dms.documents.translated"
+  KAFKA_AUTO_OFFSET_RESET: "earliest"
+  GEMINI_MODEL: "gemini-2.0-flash"
+  TARGET_LANGUAGE: "French"
+  POSTGRES_DB: "documentsdb"
+  POSTGRES_USER: "postgres"
+  PG_HOST: "postgres"

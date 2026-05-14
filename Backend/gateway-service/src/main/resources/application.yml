@@ -15,6 +15,30 @@ spring:
                 - Path=/api/documents/**
               filters:
                 - RewritePath=/api/(?<segment>.*), /${segment}
+            - id: users
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - RewritePath=/api/(?<segment>.*), /${segment}
+            - id: categories
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/categories/**
+              filters:
+                - RewritePath=/api/(?<segment>.*), /${segment}
+            - id: departments
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/departments/**
+              filters:
+                - RewritePath=/api/(?<segment>.*), /${segment}
+            - id: versions
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/versions/**
+              filters:
+                - RewritePath=/api/(?<segment>.*), /${segment}
             - id: comments
               uri: ${COMMENTS_SERVICE_URL:http://localhost:8083}
               predicates:

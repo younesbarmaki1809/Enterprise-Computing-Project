@@ -17,6 +17,16 @@ public class CommentController {
         this.commentService = commentService;
     }
 
+    @GetMapping
+    public List<CommentResponse> getCommentsByDocument(@RequestParam("documentId") Long documentId) {
+        return commentService.getComments(documentId);
+    }
+
+    @PostMapping
+    public CommentResponse createComment(@RequestBody CommentRequest comment) {
+        return commentService.addComment(comment);
+    }
+
     @GetMapping("/list/{docId}")
     public List<CommentResponse> getComments(@PathVariable Long docId) {
         return commentService.getComments(docId);

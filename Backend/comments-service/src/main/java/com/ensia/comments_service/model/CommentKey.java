@@ -11,16 +11,16 @@ import java.util.UUID;
 public class CommentKey implements Serializable {
 
     @PrimaryKeyColumn(name = "doc_id", type = PrimaryKeyType.PARTITIONED, ordinal = 0)
-    private UUID docId;
+    private Long docId;
 
     @PrimaryKeyColumn(name = "comment_id", type = PrimaryKeyType.CLUSTERED, ordinal = 1)
     private UUID commentId;
 
-    public UUID getDocId() {
+    public Long getDocId() {
         return docId;
     }
 
-    public void setDocId(UUID docId) {
+    public void setDocId(Long docId) {
         this.docId = docId;
     }
 

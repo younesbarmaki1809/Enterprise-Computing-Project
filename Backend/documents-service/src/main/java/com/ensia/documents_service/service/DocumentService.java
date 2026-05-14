@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -17,11 +18,14 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final S3Service s3Service;
+    private final DocumentEventPublisher documentEventPublisher;
 
     public DocumentService(DocumentRepository documentRepository,
-                           @Autowired(required = false) S3Service s3Service) {
+                           @Autowired(required = false) S3Service s3Service,
+                           DocumentEventPublisher documentEventPublisher) {
         this.documentRepository = documentRepository;
         this.s3Service = s3Service;
+        this.documentEventPublisher = documentEventPublisher;
     }
 
     public List<Document> listDocuments() {
@@ -35,6 +39,14 @@ public class DocumentService {
     }
 
     public Document addDocument(Document document) {
+        ensureTimestamps(document);
+        Document savedDocument = documentRepository.save(document);
+        documentEventPublisher.publishDocumentUploaded(savedDocument);
+        return savedDocument;
+    }
+
+    public Document save(Document document) {
+        ensureTimestamps(document);
         return documentRepository.save(document);
     }
 
@@ -49,8 +61,12 @@ public class DocumentService {
         document.setFileKey(fileKey);
         document.setContentType(file.getContentType());
         document.setFileSize(file.getSize());
+        document.setCreatedAt(Instant.now());
+        document.setUpdatedAt(Instant.now());
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        documentEventPublisher.publishDocumentUploaded(savedDocument);
+        return savedDocument;
     }
 
     @CacheEvict(value = "documents", key = "#id")
@@ -69,6 +85,7 @@ public class DocumentService {
         document.setFileKey(fileKey);
         document.setContentType(file.getContentType());
         document.setFileSize(file.getSize());
+        document.setUpdatedAt(Instant.now());
 
         return documentRepository.save(document);
     }
@@ -92,12 +109,29 @@ public class DocumentService {
             throw new NoSuchElementException("Document not found with id: " + id);
         }
 
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Document not found with id: " + id));
+
+        if (document.getFileKey() != null && s3Service != null) {
+            s3Service.deleteFile(document.getFileKey());
+        }
+
         documentRepository.deleteById(id);
     }
 
     private void ensureS3Available() {
         if (s3Service == null) {
             throw new IllegalStateException("S3 service is not configured");
+        }
+    }
+
+    private void ensureTimestamps(Document document) {
+        if (document.getCreatedAt() == null) {
+            document.setCreatedAt(Instant.now());
+        }
+
+        if (document.getUpdatedAt() == null) {
+            document.setUpdatedAt(document.getCreatedAt());
         }
     }
 }

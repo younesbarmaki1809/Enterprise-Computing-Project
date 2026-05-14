@@ -6,10 +6,9 @@ import org.springframework.data.cassandra.repository.CassandraRepository;
 import org.springframework.data.cassandra.repository.Query;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface CommentRepository extends CassandraRepository<Comment, CommentKey> {
 
     @Query("SELECT * FROM comments WHERE doc_id = ?0")
-    List<Comment> findByDocId(UUID docId);
+    List<Comment> findByDocId(Long docId);
 }

@@ -1,0 +1,24 @@
+services:
+  translator-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: translator-service
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      TARGET_LANGUAGE: ${TARGET_LANGUAGE:-French}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_CONSUMER_GROUP: translator-service
+      KAFKA_INPUT_TOPIC: dms.documents.uploaded
+      KAFKA_OUTPUT_TOPIC: dms.documents.translated
+      KAFKA_AUTO_OFFSET_RESET: ${KAFKA_AUTO_OFFSET_RESET:-earliest}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
+      GEMINI_RETRY_BACKOFF_SECONDS: ${GEMINI_RETRY_BACKOFF_SECONDS:-2}
+    restart: unless-stopped
+    networks:
+      - backend_default
+
+networks:
+  backend_default:
+    external: true

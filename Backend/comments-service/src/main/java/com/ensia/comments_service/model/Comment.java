@@ -3,15 +3,19 @@ package com.ensia.comments_service.model;
 import org.springframework.data.cassandra.core.mapping.PrimaryKey;
 import org.springframework.data.cassandra.core.mapping.Table;
 
+import java.time.Instant;
+
 @Table("comments")
 public class Comment {
 
     @PrimaryKey
     private CommentKey key;
 
-    private String content;
+    private Long userId;
 
-    private String author;
+    private String text;
+
+    private Instant createdAt;
 
     public CommentKey getKey() {
         return key;
@@ -21,19 +25,27 @@ public class Comment {
         this.key = key;
     }
 
-    public String getContent() {
-        return content;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    public String getAuthor() {
-        return author;
+    public String getText() {
+        return text;
     }
 
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

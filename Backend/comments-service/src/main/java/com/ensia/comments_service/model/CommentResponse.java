@@ -1,43 +1,49 @@
 package com.ensia.comments_service.model;
 
-import java.util.UUID;
-
 public class CommentResponse {
+    private String id;
+    private Long documentId;
+    private Long userId;
+    private String text;
+    private java.time.Instant createdAt;
 
-    private UUID docId;
-    private UUID commentId;
-    private String content;
-    private String author;
-
-    public UUID getDocId() {
-        return docId;
+    public String getId() {
+        return id;
     }
 
-    public void setDocId(UUID docId) {
-        this.docId = docId;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public UUID getCommentId() {
-        return commentId;
+    public Long getDocumentId() {
+        return documentId;
     }
 
-    public void setCommentId(UUID commentId) {
-        this.commentId = commentId;
+    public void setDocumentId(Long documentId) {
+        this.documentId = documentId;
     }
 
-    public String getContent() {
-        return content;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    public String getAuthor() {
-        return author;
+    public String getText() {
+        return text;
     }
 
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public java.time.Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

@@ -1,5 +1,6 @@
 package com.ensia.documents_service.service;
 
+import com.ensia.documents_service.service.dto.PresignedUrlResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -7,8 +8,13 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -16,12 +22,17 @@ import java.util.UUID;
 public class S3Service {
 
     private final S3Client s3Client;
+    private final S3Presigner presigner;
 
     @Value("${aws.s3.bucket}")
     private String bucket;
 
-    public S3Service(S3Client s3Client) {
+    @Value("${aws.s3.presign-expiration-minutes:10}")
+    private long presignExpirationMinutes;
+
+    public S3Service(S3Client s3Client, S3Presigner presigner) {
         this.s3Client = s3Client;
+        this.presigner = presigner;
     }
 
     public String uploadFile(MultipartFile file) throws IOException {
@@ -57,4 +68,41 @@ public class S3Service {
 
         s3Client.deleteObject(request);
     }
+
+        public PresignedUrlResponse createPresignedUpload(String fileName, String contentType) {
+        String key = UUID.randomUUID().toString() + "_" + fileName;
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .contentType(contentType)
+            .build();
+
+        Duration duration = Duration.ofMinutes(presignExpirationMinutes);
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+            .signatureDuration(duration)
+            .putObjectRequest(putObjectRequest)
+            .build();
+
+        String url = presigner.presignPutObject(presignRequest).url().toString();
+
+        return new PresignedUrlResponse(url, key, Instant.now().plus(duration), "PUT");
+        }
+
+        public PresignedUrlResponse createPresignedDownload(String key) {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .build();
+
+        Duration duration = Duration.ofMinutes(presignExpirationMinutes);
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+            .signatureDuration(duration)
+            .getObjectRequest(getObjectRequest)
+            .build();
+
+        String url = presigner.presignGetObject(presignRequest).url().toString();
+
+        return new PresignedUrlResponse(url, key, Instant.now().plus(duration), "GET");
+        }
 }

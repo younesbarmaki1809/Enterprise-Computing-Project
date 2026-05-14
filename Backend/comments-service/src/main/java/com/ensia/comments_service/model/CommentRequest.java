@@ -1,32 +1,43 @@
 package com.ensia.comments_service.model;
 
+import java.time.Instant;
+
 public class CommentRequest {
 
-    private Long docId;
-    private String content;
-    private String author;
+    private Long documentId;
+    private Long userId;
+    private String text;
+    private Instant createdAt;
 
-    public Long getDocId() {
-        return docId;
+    public Long getDocumentId() {
+        return documentId;
     }
 
-    public void setDocId(Long docId) {
-        this.docId = docId;
+    public void setDocumentId(Long documentId) {
+        this.documentId = documentId;
     }
 
-    public String getContent() {
-        return content;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    public String getAuthor() {
-        return author;
+    public String getText() {
+        return text;
     }
 
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

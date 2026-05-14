@@ -7,7 +7,7 @@ import com.ensia.comments_service.model.CommentResponse;
 import com.ensia.comments_service.repository.CommentRepository;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -22,38 +22,33 @@ public class CommentService {
     }
 
     public List<CommentResponse> getComments(Long docId) {
-        UUID partitionKey = toPartitionKey(docId);
-        return repository.findByDocId(partitionKey).stream()
+        return repository.findByDocId(docId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     public CommentResponse addComment(CommentRequest request) {
-        UUID partitionKey = toPartitionKey(request.getDocId());
-
         CommentKey key = new CommentKey();
-        key.setDocId(partitionKey);
+        key.setDocId(request.getDocumentId());
         key.setCommentId(timeUuid());
 
         Comment comment = new Comment();
         comment.setKey(key);
-        comment.setContent(request.getContent());
-        comment.setAuthor(request.getAuthor());
+        comment.setUserId(request.getUserId());
+        comment.setText(request.getText());
+        comment.setCreatedAt(request.getCreatedAt() != null ? request.getCreatedAt() : Instant.now());
 
         return toResponse(repository.save(comment));
     }
 
     private CommentResponse toResponse(Comment comment) {
         CommentResponse response = new CommentResponse();
-        response.setDocId(comment.getKey().getDocId());
-        response.setCommentId(comment.getKey().getCommentId());
-        response.setContent(comment.getContent());
-        response.setAuthor(comment.getAuthor());
+        response.setId(comment.getKey().getCommentId().toString());
+        response.setDocumentId(comment.getKey().getDocId());
+        response.setUserId(comment.getUserId());
+        response.setText(comment.getText());
+        response.setCreatedAt(comment.getCreatedAt());
         return response;
-    }
-
-    private UUID toPartitionKey(Long docId) {
-        return UUID.nameUUIDFromBytes(("doc-" + docId).getBytes(StandardCharsets.UTF_8));
     }
 
     private UUID timeUuid() {
