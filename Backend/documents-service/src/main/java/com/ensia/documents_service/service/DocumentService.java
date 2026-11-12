@@ -1,6 +1,8 @@
 package com.ensia.documents_service.service;
 
+import com.ensia.documents_service.model.Department;
 import com.ensia.documents_service.model.Document;
+import com.ensia.documents_service.repository.DepartmentRepository;
 import com.ensia.documents_service.repository.DocumentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -17,19 +19,57 @@ import java.util.NoSuchElementException;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
+    private final DepartmentRepository departmentRepository;
     private final S3Service s3Service;
     private final DocumentEventPublisher documentEventPublisher;
 
     public DocumentService(DocumentRepository documentRepository,
+                           DepartmentRepository departmentRepository,
                            @Autowired(required = false) S3Service s3Service,
                            DocumentEventPublisher documentEventPublisher) {
         this.documentRepository = documentRepository;
+        this.departmentRepository = departmentRepository;
         this.s3Service = s3Service;
         this.documentEventPublisher = documentEventPublisher;
     }
 
     public List<Document> listDocuments() {
         return documentRepository.findAll();
+    }
+
+    /**
+     * Return only documents from departments that the given user belongs to.
+     * If the user belongs to no departments, returns an empty list.
+     */
+    public List<Document> listDocumentsForUser(Long userId) {
+        List<Long> departmentIds = getUserDepartmentIds(userId);
+        if (departmentIds.isEmpty()) {
+            return List.of();
+        }
+        return documentRepository.findByDepartmentIdIn(departmentIds);
+    }
+
+    /**
+     * Check whether a user is allowed to access a specific document.
+     * Returns true if the document's department includes the user,
+     * or if the document has no department assigned.
+     */
+    public boolean canUserAccessDocument(Long userId, Document document) {
+        if (document.getDepartmentId() == null) {
+            return true; // documents without a department are accessible to all authenticated users
+        }
+        List<Long> departmentIds = getUserDepartmentIds(userId);
+        return departmentIds.contains(document.getDepartmentId());
+    }
+
+    /**
+     * Get all department IDs a user belongs to.
+     */
+    public List<Long> getUserDepartmentIds(Long userId) {
+        return departmentRepository.findByMemberIdsContaining(userId)
+                .stream()
+                .map(Department::getId)
+                .toList();
     }
 
     @Cacheable(value = "documents", key = "#id")
