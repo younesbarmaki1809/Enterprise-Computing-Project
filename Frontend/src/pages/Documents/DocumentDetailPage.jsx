@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { addComment, getCommentsByDocument } from '../../api/comments'
-import { getDocumentById, updateDocument } from '../../api/documents'
+import {
+  createPresignedUpload,
+  getDocumentById,
+  updateDocument,
+  uploadToPresignedUrl,
+} from '../../api/documents'
 import { getUsers } from '../../api/users'
 import { createVersion, getVersionsByDocument } from '../../api/versions'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
@@ -104,6 +109,11 @@ export function DocumentDetailPage() {
       return
     }
 
+    if (!newVersionFile) {
+      addNotification('Select a file to upload.', 'error')
+      return
+    }
+
     try {
       const nextVersionNumber = versions.length
         ? Math.max(...versions.map((version) => Number(version.versionNumber))) + 1
@@ -111,13 +121,24 @@ export function DocumentDetailPage() {
 
       const now = new Date().toISOString()
 
+      const presign = await createPresignedUpload({
+        fileName: newVersionFile.name,
+        contentType: newVersionFile.type || 'application/octet-stream',
+      })
+
+      await uploadToPresignedUrl(
+        presign.url,
+        newVersionFile,
+        newVersionFile.type,
+      )
+
       const createdVersion = await createVersion({
         documentId: Number(id),
         versionNumber: nextVersionNumber,
-        fileUrl: newVersionFile
-          ? `/uploads/${newVersionFile.name}`
-          : '/uploads/placeholder.pdf',
-        fileSize: newVersionFile?.size || 0,
+        fileName: newVersionFile.name,
+        fileKey: presign.key,
+        contentType: newVersionFile.type || 'application/octet-stream',
+        fileSize: newVersionFile.size || 0,
         uploadedBy: user.id,
         createdAt: now,
         changelog: changelog || `Version ${nextVersionNumber}`,
@@ -185,14 +206,18 @@ export function DocumentDetailPage() {
               <p className="font-medium text-slate-800">Version {version.versionNumber}</p>
               <p className="text-slate-600">Uploaded: {formatDate(version.createdAt)}</p>
               <p className="text-slate-600">Changelog: {version.changelog}</p>
-              <a
-                href={version.fileUrl}
-                className="text-blue-700 underline"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Download
-              </a>
+              {version.downloadUrl ? (
+                <a
+                  href={version.downloadUrl}
+                  className="text-blue-700 underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Download
+                </a>
+              ) : (
+                <span className="text-slate-400">No file</span>
+              )}
             </li>
           ))}
         </ul>
