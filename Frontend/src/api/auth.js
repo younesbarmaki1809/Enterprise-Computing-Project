@@ -1,19 +1,21 @@
 import api from './axios'
 
 export async function loginUser(email, password) {
-  const response = await api.get('/users', {
-    params: {
-      email,
-      password,
-    },
+  const response = await api.post('/auth/login', {
+    email,
+    password,
   })
 
-  if (!response.data.length) {
-    throw new Error('Invalid email or password')
-  }
+  const { token, roles } = response.data
 
-  const user = response.data[0]
-  const token = btoa(`${user.id}:${user.email}:${Date.now()}`)
+  // Map backend roles (ROLE_ADMIN, ROLE_USER) to frontend roles (admin, user)
+  const role = roles.includes('ROLE_ADMIN') ? 'admin' : 'user'
+
+  const user = {
+    email: response.data.email,
+    role,
+    roles,
+  }
 
   return {
     user,

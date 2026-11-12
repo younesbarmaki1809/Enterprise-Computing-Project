@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createDocument, getDocuments, updateDocument } from '../../api/documents'
+import {
+  createDocument,
+  createPresignedUpload,
+  getDocuments,
+  updateDocument,
+  uploadToPresignedUrl,
+} from '../../api/documents'
 import { createVersion } from '../../api/versions'
 import { FilterBar } from '../../components/FilterBar'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
@@ -108,6 +114,33 @@ export function DocumentListPage() {
 
     try {
       const now = new Date().toISOString()
+      const tags = formState.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+
+      let fileKey = null
+      let fileName = null
+      let contentType = null
+      let fileSize = 0
+
+      if (formState.file) {
+        const presign = await createPresignedUpload({
+          fileName: formState.file.name,
+          contentType: formState.file.type || 'application/octet-stream',
+        })
+
+        await uploadToPresignedUrl(
+          presign.url,
+          formState.file,
+          formState.file.type,
+        )
+
+        fileKey = presign.key
+        fileName = formState.file.name
+        contentType = formState.file.type || 'application/octet-stream'
+        fileSize = formState.file.size || 0
+      }
 
       const document = await createDocument({
         title: formState.title,
@@ -117,27 +150,35 @@ export function DocumentListPage() {
         createdAt: now,
         updatedAt: now,
         currentVersionId: null,
-        tags: formState.tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+        tags,
+        fileKey,
+        fileName,
+        contentType,
+        fileSize,
       })
 
-      const version = await createVersion({
-        documentId: document.id,
-        versionNumber: 1,
-        fileUrl: formState.file
-          ? `/uploads/${formState.file.name}`
-          : '/uploads/placeholder.pdf',
-        fileSize: formState.file?.size || 0,
-        uploadedBy: user.id,
-        createdAt: now,
-        changelog: 'Initial upload',
-      })
+      let version = null
 
-      await updateDocument(document.id, {
-        currentVersionId: version.id,
-      })
+      if (fileKey) {
+        version = await createVersion({
+          documentId: document.id,
+          versionNumber: 1,
+          fileName,
+          fileKey,
+          contentType,
+          fileSize,
+          uploadedBy: user.id,
+          createdAt: now,
+          changelog: 'Initial upload',
+        })
+      }
+
+      if (version) {
+        await updateDocument(document.id, {
+          currentVersionId: version.id,
+          updatedAt: now,
+        })
+      }
 
       addNotification('Document uploaded successfully.')
       setFormState(initialForm)
